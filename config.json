@@ -1,0 +1,26 @@
+{
+    "token": "",
+    "clientId": "",
+    "guildId": "",
+    "categoryId": "1378778140528087191",
+    "supportRoles": [
+        "Support Team",
+        "Moderator",
+        "Admin",
+        "Staff"
+    ],
+    "staffRoleId": "1277638402019430501",
+    "maxTicketsPerUser": 1,
+    "ticketChannelPrefix": "ticket",
+    "embedColors": {
+        "success": "#00FF00",
+        "error": "#FF0000",
+        "info": "#0099FF",
+        "warning": "#FFA500"
+    },
+    "autoCleanup": {
+        "enabled": true,
+        "maxAgeHours": 168
+    },
+    "logChannelId": "1309235378317951158"
+}
