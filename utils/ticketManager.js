@@ -54,6 +54,18 @@ async function createTicketChannel(guild, channelName, user, reason, ticketNumbe
     const config = require('../config.json');
     
     try {
+        console.log(`[TICKET MANAGER] Creating ticket channel: ${channelName} for user ${user.tag}`);
+        
+        // Final check for existing ticket before creating
+        const finalCheck = guild.channels.cache.find(
+            channel => channel.name === channelName && channel.type === ChannelType.GuildText
+        );
+
+        if (finalCheck) {
+            console.log(`[TICKET MANAGER] Ticket already exists: ${finalCheck.name} for user ${user.tag}`);
+            throw new Error(`Ticket channel ${channelName} already exists`);
+        }
+
         // Find the specific category by ID
         let ticketCategory = guild.channels.cache.get(config.categoryId);
         
@@ -118,7 +130,7 @@ async function createTicketChannel(guild, channelName, user, reason, ticketNumbe
         }
 
         // Create the ticket channel with new naming format: seg-@username
-        const securityChannelName = `seg-${user.username}`;
+        const securityChannelName = `seg-${user.username.toLowerCase()}`;
         const ticketChannel = await guild.channels.create({
             name: securityChannelName,
             type: ChannelType.GuildText,
@@ -128,6 +140,7 @@ async function createTicketChannel(guild, channelName, user, reason, ticketNumbe
         });
 
         console.log(`Created security ticket channel: ${ticketChannel.name} for ${user.tag}`);
+        console.log(`[TICKET MANAGER] Successfully created ticket: ${ticketChannel.name} for user ${user.tag}`);
         return ticketChannel;
 
     } catch (error) {

@@ -171,10 +171,30 @@ client.on(Events.InteractionCreate, async interaction => {
                 const guild = interaction.guild;
                 const user = interaction.user;
 
+                console.log(`[TICKET MODAL] User ${user.tag} (${user.id}) attempting to create ticket`);
+
+                // Double-check for existing ticket before creating
+                const existingTicket = guild.channels.cache.find(
+                    channel => channel.name === `seg-${user.username.toLowerCase()}` && channel.type === ChannelType.GuildText
+                );
+
+                if (existingTicket) {
+                    console.log(`[TICKET MODAL] User ${user.tag} already has ticket: ${existingTicket.name}`);
+                    const errorEmbed = new EmbedBuilder()
+                        .setColor('#FF0000')
+                        .setTitle('❌ Ticket Já Existe')
+                        .setDescription(`Você já tem um ticket aberto: ${existingTicket}`)
+                        .setTimestamp();
+
+                    return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+                }
+
+                console.log(`[TICKET MODAL] Creating ticket for user ${user.tag}`);
                 const ticketNumber = getNextTicketNumber();
                 const channelName = `seg-${user.username.toLowerCase()}`;
                 
                 const ticketChannel = await createTicketChannel(guild, channelName, user, reason, ticketNumber);
+                console.log(`[TICKET MODAL] Successfully created ticket: ${ticketChannel.name} for user ${user.tag}`);
 
                 const successEmbed = new EmbedBuilder()
                     .setColor('#00FF00')

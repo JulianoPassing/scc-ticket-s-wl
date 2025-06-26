@@ -3,6 +3,7 @@
     "clientId": "",
     "guildId": "",
     "categoryId": "1378778140528087191",
+    "securityCategories": ["1378778140528087191"],
     "supportRoles": [
         "Support Team",
         "Moderator",

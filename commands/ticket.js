@@ -70,13 +70,16 @@ async function handleCreateTicket(interaction) {
     const guild = interaction.guild;
     const user = interaction.user;
 
+    console.log(`[TICKET COMMAND] User ${user.tag} (${user.id}) attempting to create ticket`);
+
     try {
         // Check if user already has an open ticket (check for seg-@username format)
         const existingTicket = guild.channels.cache.find(
-            channel => channel.name === `seg-${user.username}` && channel.type === ChannelType.GuildText
+            channel => channel.name === `seg-${user.username.toLowerCase()}` && channel.type === ChannelType.GuildText
         );
 
         if (existingTicket) {
+            console.log(`[TICKET COMMAND] User ${user.tag} already has ticket: ${existingTicket.name}`);
             const errorEmbed = new EmbedBuilder()
                 .setColor('#FF0000')
                 .setTitle('❌ Ticket Already Exists')
@@ -86,11 +89,29 @@ async function handleCreateTicket(interaction) {
             return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
         }
 
+        console.log(`[TICKET COMMAND] Creating ticket for user ${user.tag}`);
         // Create ticket channel
         const ticketNumber = getNextTicketNumber();
-        const channelName = `seg-${user.username}`;
+        const channelName = `seg-${user.username.toLowerCase()}`;
+        
+        // Double-check for existing ticket before creating
+        const doubleCheckTicket = guild.channels.cache.find(
+            channel => channel.name === channelName && channel.type === ChannelType.GuildText
+        );
+
+        if (doubleCheckTicket) {
+            console.log(`[TICKET COMMAND] User ${user.tag} already has ticket (double check): ${doubleCheckTicket.name}`);
+            const errorEmbed = new EmbedBuilder()
+                .setColor('#FF0000')
+                .setTitle('❌ Ticket Já Existe')
+                .setDescription(`Você já tem um ticket aberto: ${doubleCheckTicket}`)
+                .setTimestamp();
+
+            return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+        }
         
         const ticketChannel = await createTicketChannel(guild, channelName, user, reason, ticketNumber);
+        console.log(`[TICKET COMMAND] Successfully created ticket: ${ticketChannel.name} for user ${user.tag}`);
 
         // Success embed
         const successEmbed = new EmbedBuilder()
