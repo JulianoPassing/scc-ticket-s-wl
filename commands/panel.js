@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
+const fs = require('fs');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -8,6 +9,28 @@ module.exports = {
 
     async execute(interaction) {
         try {
+            // Load configuration
+            const config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
+            
+            // Check if the command is being used in a recognized security category
+            const isInSecurityCategory = (channel) => {
+                if (!channel.parent) return false;
+                return config.securityCategories.includes(channel.parent.id);
+            };
+            
+            if (!isInSecurityCategory(interaction.channel)) {
+                const errorEmbed = new EmbedBuilder()
+                    .setColor('#FF0000')
+                    .setTitle('❌ Categoria Inválida')
+                    .setDescription('Este comando só pode ser usado em categorias de segurança reconhecidas!')
+                    .addFields(
+                        { name: '📋 Categorias Válidas', value: config.securityCategories.map(id => `<#${id}>`).join('\n') }
+                    )
+                    .setTimestamp();
+                
+                return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            }
+
             const panelEmbed = new EmbedBuilder()
                 .setColor('#FF6B35')
                 .setTitle('🛡️ Sistema de Segurança')
@@ -41,15 +64,15 @@ module.exports = {
             });
 
         } catch (error) {
-            console.error('Error creating ticket panel:', error);
+            console.error('Error creating security panel:', error);
             
             const errorEmbed = new EmbedBuilder()
                 .setColor('#FF0000')
                 .setTitle('❌ Erro')
-                .setDescription('Houve um erro ao criar o painel de tickets.')
+                .setDescription('Houve um erro ao criar o painel de segurança.')
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [errorEmbed], flags: 64 });
+            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
         }
-    },
+    }
 };
