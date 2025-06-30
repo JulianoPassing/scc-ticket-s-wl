@@ -169,16 +169,6 @@ async function handleCreateTicket(interaction) {
 async function handleCloseTicket(interaction) {
     const channel = interaction.channel;
     
-    // Check if this is a security ticket channel
-    if (!channel.name.startsWith('seg-')) {
-        const errorEmbed = new EmbedBuilder()
-            .setColor('#FF0000')
-            .setTitle('❌ Canal Inválido')
-            .setDescription('Este comando só pode ser usado em canais de segurança!');
-        
-        return await interaction.reply({ embeds: [errorEmbed], flags: 64 });
-    }
-
     // Check permissions - only staff can close tickets
     const config = require('../config.json');
     const hasStaffRole = interaction.member.roles.cache.has(config.staffRoleId);
