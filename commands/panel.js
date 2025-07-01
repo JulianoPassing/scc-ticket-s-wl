@@ -19,7 +19,7 @@ module.exports = {
             };
             
             // Permitir apenas no canal específico
-            const allowedChannelId = '1046404064004558923';
+            const allowedChannelId = '1277774688650526734';
             if (interaction.channel.id !== allowedChannelId) {
                 const errorEmbed = new EmbedBuilder()
                     .setColor('#FF0000')
