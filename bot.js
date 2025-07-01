@@ -12,8 +12,14 @@ const client = new Client({
     ]
 });
 
-// Load configuration
-const config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
+// Load configuration once at startup
+let config;
+try {
+    config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
+} catch (error) {
+    console.error('Error loading config.json:', error);
+    process.exit(1);
+}
 
 // Create a collection for commands
 client.commands = new Collection();
@@ -39,6 +45,42 @@ client.once(Events.ClientReady, () => {
     console.log(`✅ Bot is ready! Logged in as ${client.user.tag}`);
     client.user.setActivity('Managing support tickets', { type: 'WATCHING' });
 });
+
+// Rate limiting system
+const rateLimit = new Map();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 5;
+
+function isRateLimited(userId) {
+    const now = Date.now();
+    const userRequests = rateLimit.get(userId) || [];
+    
+    // Remove old requests outside the window
+    const recentRequests = userRequests.filter(time => now - time < RATE_LIMIT_WINDOW);
+    
+    if (recentRequests.length >= MAX_REQUESTS_PER_WINDOW) {
+        return true;
+    }
+    
+    // Add current request
+    recentRequests.push(now);
+    rateLimit.set(userId, recentRequests);
+    
+    return false;
+}
+
+// Clean up old rate limit entries periodically
+setInterval(() => {
+    const now = Date.now();
+    for (const [userId, requests] of rateLimit.entries()) {
+        const recentRequests = requests.filter(time => now - time < RATE_LIMIT_WINDOW);
+        if (recentRequests.length === 0) {
+            rateLimit.delete(userId);
+        } else {
+            rateLimit.set(userId, recentRequests);
+        }
+    }
+}, RATE_LIMIT_WINDOW);
 
 // UNIFIED Interaction Handler
 client.on(Events.InteractionCreate, async interaction => {
@@ -74,6 +116,17 @@ client.on(Events.InteractionCreate, async interaction => {
     
     // 2. Handle Button Interactions
     else if (interaction.isButton()) {
+        // Apply rate limiting
+        if (isRateLimited(interaction.user.id)) {
+            const rateLimitEmbed = new EmbedBuilder()
+                .setColor('#FF0000')
+                .setTitle('⚠️ Rate Limited')
+                .setDescription('Você está fazendo muitas requisições. Aguarde um momento antes de tentar novamente.')
+                .setTimestamp();
+            
+            return await interaction.reply({ embeds: [rateLimitEmbed], ephemeral: true });
+        }
+        
         if (interaction.customId === 'close_ticket') {
             const { generateTranscript, saveTranscript } = require('./utils/transcriptGenerator');
             
@@ -163,6 +216,17 @@ client.on(Events.InteractionCreate, async interaction => {
     
     // 3. Handle Modal Submissions
     else if (interaction.isModalSubmit()) {
+        // Apply rate limiting
+        if (isRateLimited(interaction.user.id)) {
+            const rateLimitEmbed = new EmbedBuilder()
+                .setColor('#FF0000')
+                .setTitle('⚠️ Rate Limited')
+                .setDescription('Você está fazendo muitas requisições. Aguarde um momento antes de tentar novamente.')
+                .setTimestamp();
+            
+            return await interaction.reply({ embeds: [rateLimitEmbed], ephemeral: true });
+        }
+        
         if (interaction.customId === 'ticket_reason_modal') {
             const { createTicketChannel, getNextTicketNumber } = require('./utils/ticketManager');
             
@@ -190,7 +254,7 @@ client.on(Events.InteractionCreate, async interaction => {
                 }
 
                 console.log(`[TICKET MODAL] Creating ticket for user ${user.tag}`);
-                const ticketNumber = getNextTicketNumber();
+                const ticketNumber = await getNextTicketNumber();
                 const channelName = `seg-${user.username.toLowerCase()}`;
                 
                 const ticketChannel = await createTicketChannel(guild, channelName, user, reason, ticketNumber);

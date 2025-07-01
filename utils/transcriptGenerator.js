@@ -9,12 +9,15 @@ const path = require('path');
  */
 async function generateTranscript(channel, closedBy) {
     try {
-        // Fetch all messages from the channel
+        // Fetch all messages from the channel with safety limits
         const messages = [];
         let lastMessageId;
+        let fetchCount = 0;
+        const MAX_FETCHES = 50; // Limit to prevent infinite loops
+        const MESSAGES_PER_FETCH = 100;
         
-        while (true) {
-            const options = { limit: 100 };
+        while (fetchCount < MAX_FETCHES) {
+            const options = { limit: MESSAGES_PER_FETCH };
             if (lastMessageId) {
                 options.before = lastMessageId;
             }
@@ -24,6 +27,12 @@ async function generateTranscript(channel, closedBy) {
             
             messages.push(...fetchedMessages.values());
             lastMessageId = fetchedMessages.last().id;
+            fetchCount++;
+            
+            // Add a small delay to prevent rate limiting
+            if (fetchCount % 10 === 0) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
         }
         
         // Sort messages by creation time (oldest first)
@@ -344,17 +353,22 @@ function escapeHtml(text) {
  * @returns {Promise<string>} File path
  */
 async function saveTranscript(html, channelName) {
+    const fs = require('fs').promises;
     const transcriptsDir = path.join(__dirname, '..', 'transcripts');
     
-    // Create transcripts directory if it doesn't exist
-    if (!fs.existsSync(transcriptsDir)) {
-        fs.mkdirSync(transcriptsDir, { recursive: true });
+    try {
+        // Create transcripts directory if it doesn't exist
+        await fs.mkdir(transcriptsDir, { recursive: true });
+    } catch (error) {
+        if (error.code !== 'EEXIST') {
+            console.error('Error creating transcripts directory:', error);
+        }
     }
     
     const fileName = `transcript-${channelName}-${Date.now()}.html`;
     const filePath = path.join(transcriptsDir, fileName);
     
-    fs.writeFileSync(filePath, html, 'utf8');
+    await fs.writeFile(filePath, html, 'utf8');
     
     return filePath;
 }

@@ -1,5 +1,5 @@
 const { ChannelType, PermissionFlagsBits } = require('discord.js');
-const fs = require('fs');
+const fs = require('fs').promises; // Use promises for async operations
 const path = require('path');
 
 // File to store ticket counter
@@ -7,33 +7,36 @@ const ticketCounterFile = path.join(__dirname, '..', 'ticket-counter.json');
 
 /**
  * Get the next ticket number
- * @returns {number} Next ticket number
+ * @returns {Promise<number>} Next ticket number
  */
-function getNextTicketNumber() {
+async function getNextTicketNumber() {
     let counter = 1;
     
     try {
-        if (fs.existsSync(ticketCounterFile)) {
-            const fileContent = fs.readFileSync(ticketCounterFile, 'utf8').trim();
-            if (fileContent) {
-                const data = JSON.parse(fileContent);
-                counter = data.counter || 1;
-            }
+        const fileContent = await fs.readFile(ticketCounterFile, 'utf8');
+        if (fileContent.trim()) {
+            const data = JSON.parse(fileContent);
+            counter = data.counter || 1;
         }
     } catch (error) {
-        console.error('Error reading ticket counter:', error);
-        // Reset counter file if corrupted
-        try {
-            fs.writeFileSync(ticketCounterFile, JSON.stringify({ counter: 1 }, null, 2));
-        } catch (writeError) {
-            console.error('Error resetting ticket counter:', writeError);
+        if (error.code === 'ENOENT') {
+            // File doesn't exist, start with counter = 1
+            console.log('Ticket counter file not found, starting from 1');
+        } else {
+            console.error('Error reading ticket counter:', error);
+            // Reset counter file if corrupted
+            try {
+                await fs.writeFile(ticketCounterFile, JSON.stringify({ counter: 1 }, null, 2));
+            } catch (writeError) {
+                console.error('Error resetting ticket counter:', writeError);
+            }
         }
     }
 
     // Increment and save
     const newCounter = counter + 1;
     try {
-        fs.writeFileSync(ticketCounterFile, JSON.stringify({ counter: newCounter }, null, 2));
+        await fs.writeFile(ticketCounterFile, JSON.stringify({ counter: newCounter }, null, 2));
     } catch (error) {
         console.error('Error saving ticket counter:', error);
     }
@@ -56,13 +59,13 @@ async function createTicketChannel(guild, channelName, user, reason, ticketNumbe
     try {
         console.log(`[TICKET MANAGER] Creating ticket channel: ${channelName} for user ${user.tag}`);
         
-        // Final check for existing ticket before creating
-        const finalCheck = guild.channels.cache.find(
+        // Single check for existing ticket before creating
+        const existingTicket = guild.channels.cache.find(
             channel => channel.name === channelName && channel.type === ChannelType.GuildText
         );
 
-        if (finalCheck) {
-            console.log(`[TICKET MANAGER] Ticket already exists: ${finalCheck.name} for user ${user.tag}`);
+        if (existingTicket) {
+            console.log(`[TICKET MANAGER] Ticket already exists: ${existingTicket.name} for user ${user.tag}`);
             throw new Error(`Ticket channel ${channelName} already exists`);
         }
 
@@ -73,7 +76,7 @@ async function createTicketChannel(guild, channelName, user, reason, ticketNumbe
             throw new Error(`Category with ID ${config.categoryId} not found or is not a category`);
         }
 
-        // Create permission overwrites
+        // Create permission overwrites efficiently
         const permissionOverwrites = [
             {
                 id: guild.roles.everyone,
@@ -110,9 +113,12 @@ async function createTicketChannel(guild, channelName, user, reason, ticketNumbe
             }
         }
 
-        // Add support roles to the channel (backup roles)
-        for (const roleName of config.supportRoles) {
-            const role = guild.roles.cache.find(r => r.name === roleName);
+        // Add support roles to the channel (backup roles) - optimized
+        const supportRoles = config.supportRoles || [];
+        const existingRoles = guild.roles.cache;
+        
+        for (const roleName of supportRoles) {
+            const role = existingRoles.find(r => r.name === roleName);
             if (role) {
                 permissionOverwrites.push({
                     id: role.id,
@@ -129,17 +135,15 @@ async function createTicketChannel(guild, channelName, user, reason, ticketNumbe
             }
         }
 
-        // Create the ticket channel with new naming format: seg-@username
-        const securityChannelName = `seg-${user.username.toLowerCase()}`;
+        // Create the ticket channel
         const ticketChannel = await guild.channels.create({
-            name: securityChannelName,
+            name: channelName,
             type: ChannelType.GuildText,
             parent: ticketCategory,
             topic: `Ticket de Segurança #${ticketNumber} | ${user.tag} | ${reason}`,
             permissionOverwrites: permissionOverwrites,
         });
 
-        console.log(`Created security ticket channel: ${ticketChannel.name} for ${user.tag}`);
         console.log(`[TICKET MANAGER] Successfully created ticket: ${ticketChannel.name} for user ${user.tag}`);
         return ticketChannel;
 

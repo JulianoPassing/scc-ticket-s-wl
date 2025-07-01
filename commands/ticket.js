@@ -91,7 +91,7 @@ async function handleCreateTicket(interaction) {
 
         console.log(`[TICKET COMMAND] Creating ticket for user ${user.tag}`);
         // Create ticket channel
-        const ticketNumber = getNextTicketNumber();
+        const ticketNumber = await getNextTicketNumber();
         const channelName = `seg-${user.username.toLowerCase()}`;
         
         // Double-check for existing ticket before creating
