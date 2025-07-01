@@ -18,16 +18,15 @@ module.exports = {
                 return config.securityCategories.includes(channel.parent.id);
             };
             
-            if (!isInSecurityCategory(interaction.channel)) {
+            // Permitir apenas no canal específico
+            const allowedChannelId = '1046404064004558923';
+            if (interaction.channel.id !== allowedChannelId) {
                 const errorEmbed = new EmbedBuilder()
                     .setColor('#FF0000')
-                    .setTitle('❌ Categoria Inválida')
-                    .setDescription('Este comando só pode ser usado em categorias de segurança reconhecidas!')
-                    .addFields(
-                        { name: '📋 Categorias Válidas', value: config.securityCategories.map(id => `<#${id}>`).join('\n') }
-                    )
+                    .setTitle('❌ Canal Inválido')
+                    .setDescription('Este comando só pode ser usado no canal correto para o painel de tickets!')
+                    .addFields({ name: 'Canal Permitido', value: `<#${allowedChannelId}>` })
                     .setTimestamp();
-                
                 return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
             }
 
