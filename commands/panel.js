@@ -30,6 +30,8 @@ module.exports = {
                 return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
             }
 
+            await interaction.deferReply({ ephemeral: true });
+
             const panelEmbed = new EmbedBuilder()
                 .setColor('#5865F2')
                 .setTitle('🛡️ Painel de Tickets de Segurança')
@@ -62,9 +64,8 @@ module.exports = {
             });
 
             // Reply ephemeral to confirm creation
-            await interaction.reply({ 
-                content: '✅ Painel de segurança criado com sucesso!',
-                flags: 64 // ephemeral
+            await interaction.editReply({ 
+                content: '✅ Painel de segurança criado com sucesso!'
             });
 
         } catch (error) {
@@ -76,7 +77,11 @@ module.exports = {
                 .setDescription('Houve um erro ao criar o painel de segurança.')
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+            try {
+                await interaction.editReply({ embeds: [errorEmbed] });
+            } catch (e) {
+                // Se não for possível editar, ignore
+            }
         }
     }
 };
