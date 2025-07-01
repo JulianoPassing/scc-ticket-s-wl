@@ -133,15 +133,6 @@ client.on(Events.InteractionCreate, async interaction => {
             try {
                 const channel = interaction.channel;
                 
-                if (!channel.name.startsWith('seg-')) {
-                    const errorEmbed = new EmbedBuilder()
-                        .setColor('#FF0000')
-                        .setTitle('❌ Erro')
-                        .setDescription('Este comando só pode ser usado em canais de segurança!');
-                    
-                    return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
-                }
-
                 const hasStaffRole = interaction.member.roles.cache.has(config.staffRoleId);
                 const hasOtherStaffRole = interaction.member.roles.cache.some(role => config.supportRoles.includes(role.name));
                 
@@ -149,14 +140,14 @@ client.on(Events.InteractionCreate, async interaction => {
                     const errorEmbed = new EmbedBuilder()
                         .setColor('#FF0000')
                         .setTitle('❌ Acesso Negado')
-                        .setDescription('Apenas membros da equipe podem fechar tickets de segurança!');
+                        .setDescription('Apenas membros da equipe podem fechar tickets!');
                     
                     return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
                 }
 
                 const modal = new ModalBuilder()
                     .setCustomId('close_ticket_modal')
-                    .setTitle('🔒 Fechar Ticket de Segurança');
+                    .setTitle('🔒 Fechar Ticket');
 
                 const reasonInput = new TextInputBuilder()
                     .setCustomId('close_reason')
@@ -322,8 +313,11 @@ client.on(Events.InteractionCreate, async interaction => {
                     .setTitle('🔒 Fechando Ticket')
                     .setDescription('Gerando transcript e fechando ticket em 3 segundos...')
                     .addFields(
-                        { name: '📝 Motivo do Fechamento', value: closeReason }
+                        { name: '📝 Motivo do Fechamento', value: closeReason },
+                        { name: '👤 Fechado por', value: `${interaction.user}` },
+                        { name: '📋 Canal', value: `#${channel.name}` }
                     )
+                    .setFooter({ text: 'A equipe agradece seu contato!' })
                     .setTimestamp();
 
                 await interaction.reply({ embeds: [confirmEmbed] });
@@ -341,14 +335,15 @@ client.on(Events.InteractionCreate, async interaction => {
 
                     const logEmbed = new EmbedBuilder()
                         .setColor('#FF6B6B')
-                        .setTitle('🎫 Ticket de Segurança Fechado')
-                        .setDescription(`Ticket **${channel.name}** foi fechado`)
+                        .setTitle('🎫 Ticket Fechado')
+                        .setDescription(`O ticket **${channel.name}** foi fechado.`)
                         .addFields(
                             { name: '👤 Fechado por', value: `${interaction.user}`, inline: true },
                             { name: '📅 Data', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: true },
                             { name: '📋 Canal', value: `#${channel.name}`, inline: true },
                             { name: '📝 Motivo do Fechamento', value: closeReason }
                         )
+                        .setFooter({ text: 'Transcript anexado • Sistema de Tickets' })
                         .setTimestamp();
 
                     await logChannel.send({    
