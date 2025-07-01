@@ -32,14 +32,19 @@ module.exports = {
             }
 
             const panelEmbed = new EmbedBuilder()
-                .setColor('#FF6B35')
-                .setTitle('🛡️ Sistema de Segurança')
-                .setDescription('Precisa reportar algo para a equipe de segurança? Clique no botão abaixo!\n\n🔒 **Como funciona:**\n• Clique em "Abrir Ticket"\n• Basta abrir o ticket e aguardar, em breve a equipe lhe respondera\n• Apenas a equipe de segurança terá acesso')
-                .addFields(
-                    { name: '👥 Acesso', value: 'Apenas staff', inline: true },
-                    { name: '📊 Categoria', value: 'Segurança', inline: true }
+                .setColor('#5865F2')
+                .setTitle('🛡️ Painel de Tickets de Segurança')
+                .setDescription(
+                    '**Precisa reportar um problema, denúncia ou situação confidencial?**\n\n'
+                    + 'Clique no botão abaixo para abrir um ticket privado com a equipe de segurança.\n\n'
+                    + '```\n✔️ Atendimento rápido e sigiloso\n🔒 Apenas a equipe de segurança terá acesso\n📄 Você receberá um registro completo da conversa\n```'
                 )
-                .setFooter({ text: 'Sistema de Segurança • Confidencial e protegido' })
+                .addFields(
+                    { name: 'Como funciona?', value: '1️⃣ Clique em **"🛡️ Abrir Ticket"**\n2️⃣ Descreva o motivo\n3️⃣ Aguarde o atendimento da equipe', inline: false },
+                    { name: 'Atenção', value: '⚠️ **Abuso do sistema pode resultar em punição. Use apenas para assuntos sérios!**', inline: false }
+                )
+                .setFooter({ text: 'Sistema de Segurança • Confidencialidade garantida', iconURL: 'https://cdn-icons-png.flaticon.com/512/3064/3064197.png' })
+                .setImage('https://i.imgur.com/ShgYL6s.png')
                 .setTimestamp();
 
             const ticketButton = new ActionRowBuilder()
@@ -47,7 +52,7 @@ module.exports = {
                     new ButtonBuilder()
                         .setCustomId('create_ticket_panel')
                         .setLabel('🛡️ Abrir Ticket')
-                        .setStyle(ButtonStyle.Danger)
+                        .setStyle(ButtonStyle.Primary)
                         .setEmoji('🛡️')
                 );
 

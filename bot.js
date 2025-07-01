@@ -222,6 +222,7 @@ client.on(Events.InteractionCreate, async interaction => {
             const { createTicketChannel, getNextTicketNumber } = require('./utils/ticketManager');
             
             try {
+                await interaction.deferReply({ ephemeral: true });
                 const reason = interaction.fields.getTextInputValue('ticket_reason');
                 const guild = interaction.guild;
                 const user = interaction.user;
@@ -241,7 +242,7 @@ client.on(Events.InteractionCreate, async interaction => {
                         .setDescription(`Você já tem um ticket aberto: ${existingTicket}`)
                         .setTimestamp();
 
-                    return await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+                    return await interaction.editReply({ embeds: [errorEmbed] });
                 }
 
                 console.log(`[TICKET MODAL] Creating ticket for user ${user.tag}`);
@@ -261,7 +262,7 @@ client.on(Events.InteractionCreate, async interaction => {
                     )
                     .setTimestamp();
 
-                await interaction.reply({ embeds: [successEmbed], ephemeral: true });
+                await interaction.editReply({ embeds: [successEmbed] });
 
                 const welcomeEmbed = new EmbedBuilder()
                     .setColor('#FF6B35')
@@ -299,12 +300,17 @@ client.on(Events.InteractionCreate, async interaction => {
                     .setDescription('Houve um erro ao criar seu ticket. Tente novamente ou contate um administrador.')
                     .setTimestamp();
 
-                await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+                try {
+                    await interaction.editReply({ embeds: [errorEmbed] });
+                } catch (e) {
+                    // Se não for possível editar, ignore
+                }
             }
         } else if (interaction.customId === 'close_ticket_modal') {
             const { generateTranscript, saveTranscript } = require('./utils/transcriptGenerator');
             
             try {
+                await interaction.deferReply({ ephemeral: true });
                 const closeReason = interaction.fields.getTextInputValue('close_reason');
                 const channel = interaction.channel;
 
@@ -320,7 +326,7 @@ client.on(Events.InteractionCreate, async interaction => {
                     .setFooter({ text: 'A equipe agradece seu contato!' })
                     .setTimestamp();
 
-                await interaction.reply({ embeds: [confirmEmbed] });
+                await interaction.editReply({ embeds: [confirmEmbed] });
 
                 try {
                     const transcriptHTML = await generateTranscript(channel, interaction.user);
@@ -375,7 +381,11 @@ client.on(Events.InteractionCreate, async interaction => {
                     .setDescription('Houve um erro ao fechar o ticket.')
                     .setTimestamp();
 
-                await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+                try {
+                    await interaction.editReply({ embeds: [errorEmbed] });
+                } catch (e) {
+                    // Se não for possível editar, ignore
+                }
             }
         }
     }
