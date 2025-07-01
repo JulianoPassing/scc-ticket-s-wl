@@ -293,7 +293,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
                 // Mensagem adicional após o ticket ser aberto
                 await ticketChannel.send({
-                    content: '*Agora você já está na fila de atendimento, basta aguardar o pessoal da Segurança, que eles ja falam com você e agendam sua entrevista.*'
+                    content: '## Agora você já está na fila de atendimento, basta aguardar o pessoal da Segurança, que eles ja falam com você e agendam sua entrevista.'
                 });
 
             } catch (error) {
